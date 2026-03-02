@@ -1,0 +1,18 @@
+name = "nutrition-tracker-api"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "nutrition-tracker-db"
+database_id = "fa8ed5b8-706e-4fbb-a286-3db602f10618"
+
+# Environment variables
+[vars]
+ENVIRONMENT = "production"
+ALLOWED_ORIGINS = "https://macronutritiontracker.netlify.app,http://localhost:5173,http://localhost:3000"
+
+# Secrets (set with: wrangler secret put SECRET_NAME)
+# JWT_SECRET - set via: wrangler secret put JWT_SECRET

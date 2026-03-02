@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        button {
+            background: #3B82F6;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>✅ Mobile Chrome Test</h1>
+        <p>If you can see this, the server is working!</p>
+        <p id="info"></p>
+        <button onclick="testApp()">Test Main App</button>
+    </div>
+    
+    <script>
+        document.getElementById('info').innerHTML = 
+            'Browser: ' + navigator.userAgent + '<br>' +
+            'Screen: ' + screen.width + 'x' + screen.height;
+            
+        function testApp() {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

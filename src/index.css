@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom global styles */
+:root {
+  --primary: #22c55e;
+  --primary-light: #4ade80;
+  --primary-dark: #16a34a;
+  --secondary: #0ea5e9;
+  --secondary-light: #38bdf8;
+  --secondary-dark: #0284c7;
+  --protein: #f97316;
+  --carbs: #0ea5e9;
+  --fat: #facc15;
+  --fiber: #a3e635;
+}
+
+@layer base {
+  body {
+    @apply text-gray-800 bg-gray-50 dark:bg-gray-900 dark:text-gray-200;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+  
+  h1 {
+    @apply text-3xl;
+  }
+  
+  h2 {
+    @apply text-2xl;
+  }
+  
+  h3 {
+    @apply text-xl;
+  }
+  
+  h4 {
+    @apply text-lg;
+  }
+  
+  a {
+    @apply text-primary hover:text-primary-dark transition-colors;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium transition-all duration-200;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-dark;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-white hover:bg-secondary-dark;
+  }
+  
+  .btn-outline {
+    @apply border border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-800;
+  }
+  
+  .btn-danger {
+    @apply bg-red-500 text-white hover:bg-red-600;
+  }
+  
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6;
+  }
+  
+  .form-input {
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-light focus:border-primary-light dark:bg-gray-700 dark:border-gray-600;
+  }
+  
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+  }
+  
+  .form-error {
+    @apply text-sm text-red-500 mt-1;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium;
+  }
+  
+  .badge-protein {
+    @apply bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200;
+  }
+  
+  .badge-carbs {
+    @apply bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200;
+  }
+  
+  .badge-fat {
+    @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200;
+  }
+  
+  .badge-fiber {
+    @apply bg-lime-100 text-lime-800 dark:bg-lime-900/20 dark:text-lime-200;
+  }
+  
+  .progress-bar {
+    @apply w-full h-2 bg-gray-200 rounded-full overflow-hidden dark:bg-gray-700;
+  }
+  
+  .progress-bar-fill-protein {
+    @apply h-full bg-macros-protein rounded-full;
+  }
+  
+  .progress-bar-fill-carbs {
+    @apply h-full bg-macros-carbs rounded-full;
+  }
+  
+  .progress-bar-fill-fat {
+    @apply h-full bg-macros-fat rounded-full;
+  }
+  
+  .progress-bar-fill-fiber {
+    @apply h-full bg-macros-fiber rounded-full;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 dark:bg-gray-600 rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500 dark:bg-gray-500;
+}
