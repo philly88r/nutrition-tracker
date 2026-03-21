@@ -10,13 +10,35 @@ const AiQuickLog = ({ onFoodDetected }) => {
     setIsProcessing(true);
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/v1/ai-log`, {
+      const apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
+      if (!apiBase) {
+        throw new Error('API base URL not configured');
+      }
+
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`${apiBase}/ai/log`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ mealDescription: input })
       });
       
-      const foodData = await response.json();
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Server error ${response.status}: ${text}`);
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`Unexpected response: ${text.slice(0, 200)}`);
+      }
+
+      const result = await response.json();
+      // AI endpoint returns { message, entry }, extract the entry
+      const foodData = result.entry || result;
       onFoodDetected(foodData);
       setInput('');
     } catch (error) {
@@ -50,7 +72,7 @@ const AiQuickLog = ({ onFoodDetected }) => {
           Log
         </button>
       </div>
-      <p className="text-[10px] text-indigo-400 mt-2 italic">Powered by Gemini 3 Flash Preview</p>
+      <p className="text-[10px] text-indigo-400 mt-2 italic">Powered by Cloudflare Workers AI (Kimi K2.5)</p>
     </div>
   );
 };

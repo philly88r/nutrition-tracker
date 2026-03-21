@@ -72,6 +72,16 @@ const UsdaFoodSearch = ({ onAddFood }) => {
   const handleAddFood = () => {
     if (!selectedFood) return;
     
+    // Unit conversion factors to grams
+    const unitToGrams = {
+      'g': 1,
+      'ml': 1,        // 1ml ≈ 1g for water-based foods
+      'oz': 28.35,    // 1 oz = 28.35g
+      'cup': 240,     // 1 cup ≈ 240g (varies by food, but standard approximation)
+      'tbsp': 15,     // 1 tbsp ≈ 15g
+      'tsp': 5        // 1 tsp ≈ 5g
+    };
+    
     // Create a copy of the selected food with the user-specified serving size
     const foodToAdd = {
       ...selectedFood,
@@ -79,10 +89,13 @@ const UsdaFoodSearch = ({ onAddFood }) => {
       servingUnit
     };
     
-    // Calculate nutrition values based on serving size if different from 100g
-    if (servingSize !== 100) {
-      const ratio = servingSize / 100;
-      
+    // Calculate nutrition values based on serving size
+    // USDA data is always per 100g, so we need to convert the user's serving to grams first
+    const gramsPerServing = servingSize * (unitToGrams[servingUnit] || 1);
+    const ratio = gramsPerServing / 100;  // Ratio compared to 100g baseline
+    
+    // Only adjust if ratio is different from 1 (i.e., not exactly 100g)
+    if (ratio !== 1) {
       // Adjust all nutrient values based on serving size
       Object.keys(foodToAdd).forEach(key => {
         // Only adjust numeric values that are nutrients

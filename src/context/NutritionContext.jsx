@@ -208,7 +208,16 @@ export const NutritionProvider = ({ children }) => {
 
   // Initial data load on mount
   useEffect(() => {
-    loadData();
+    console.log('NutritionContext: Loading data on mount...');
+    loadData().then(data => {
+      console.log('NutritionContext: Data loaded successfully:', {
+        foodEntriesCount: data?.foodEntries?.length || 0,
+        hasGoals: !!data?.dailyGoals,
+        currentDate: data?.currentDate
+      });
+    }).catch(err => {
+      console.error('NutritionContext: Failed to load data:', err);
+    });
   }, []);
   
   return (

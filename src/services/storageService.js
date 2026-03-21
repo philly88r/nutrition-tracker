@@ -58,11 +58,27 @@ export const loadUserData = async () => {
     
     try {
       // Load from backend API
+      console.log('StorageService: Fetching data from backend...');
       const [foodData, goalsData, profileData] = await Promise.all([
-        foodEntriesAPI.getAll().catch(() => []),
-        goalsAPI.get().catch(() => null),
-        profileAPI.get().catch(() => null)
+        foodEntriesAPI.getAll().catch(err => {
+          console.error('Failed to fetch food entries:', err);
+          return [];
+        }),
+        goalsAPI.get().catch(err => {
+          console.error('Failed to fetch goals:', err);
+          return null;
+        }),
+        profileAPI.get().catch(err => {
+          console.error('Failed to fetch profile:', err);
+          return null;
+        })
       ]);
+      
+      console.log('StorageService: Backend data received:', {
+        foodEntriesCount: foodData?.length || 0,
+        hasGoals: !!goalsData,
+        hasProfile: !!profileData
+      });
       
       foodEntries = foodData || [];
       dailyGoals = goalsData;

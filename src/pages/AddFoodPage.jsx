@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UsdaFoodSearch from '../components/UsdaFoodSearch';
 import ManualFoodEntry from '../components/ManualFoodEntry';
-import AiQuickLog from '../components/AiQuickLog';
 import { useNutritionContext } from '../hooks/useNutritionContext';
 
 /**
@@ -17,7 +16,7 @@ const AddFoodPage = () => {
   const processAndAddFood = (foodData) => {
     const foodEntry = {
       id: `entry_${Date.now()}`,
-      date: state.currentDate,
+      date: new Date().toISOString().split('T')[0], // Always use today's date
       name: foodData.name || foodData.description,
       brand: foodData.brand || '',
       calories: foodData.calories || 0,
@@ -39,6 +38,11 @@ const AddFoodPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
+      <div className="mb-4 p-3 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center gap-2 text-sm text-indigo-700">
+        <span>✨</span>
+        <span>Want to log a meal by just describing it? Try the <a href="/nutrition-coach" className="font-semibold underline hover:text-indigo-900">AI Nutrition Coach</a> — just say "I just ate two eggs and toast" and it logs it for you.</span>
+      </div>
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Add Nutrition Entry</h1>
         <button
@@ -49,9 +53,6 @@ const AddFoodPage = () => {
         </button>
       </div>
 
-      {/* NEW: AI Quick Log Section */}
-      <AiQuickLog onFoodDetected={processAndAddFood} />
-      
       {/* Tab Navigation */}
       <div className="mb-6">
         <div className="border-b border-gray-200">

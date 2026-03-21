@@ -25,8 +25,22 @@ const GroceryList = () => {
   useEffect(() => {
     const loadGroceryItems = async () => {
       try {
-        const items = await groceryAPI.getAll();
-        setGroceryItems(items || []);
+        const raw = await groceryAPI.getAll();
+        // Normalize: backend returns flat columns, component expects nutritionPer100g wrapper
+        const items = (raw || []).map(item => ({
+          ...item,
+          checked: item.checked || item.purchased || false,
+          nutritionPer100g: item.nutritionPer100g || {
+            calories: item.calories || 0,
+            protein:  item.protein  || 0,
+            carbs:    item.carbs    || 0,
+            fat:      item.fat      || 0,
+            fiber:    item.fiber    || 0,
+            sugar:    item.sugar    || 0,
+            sodium:   item.sodium   || 0,
+          }
+        }));
+        setGroceryItems(items);
       } catch (error) {
         console.error('Failed to load grocery items from backend:', error);
         // Fallback to localStorage

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNutritionContext } from '../hooks/useNutritionContext';
 import { profileAPI } from '../services/apiService';
 
@@ -10,7 +10,7 @@ import { profileAPI } from '../services/apiService';
 const MacroCalculator = ({ onClose }) => {
   const { dispatch } = useNutritionContext();
   
-  const [formData, setFormData] = useState({
+  const defaultFormState = {
     name: '',
     age: '',
     gender: 'male',
@@ -26,7 +26,9 @@ const MacroCalculator = ({ onClose }) => {
     customProtein: 30,
     customCarbs: 40,
     customFat: 30
-  });
+  };
+
+  const [formData, setFormData] = useState(defaultFormState);
 
   const [results, setResults] = useState(null);
   const [errors, setErrors] = useState({});
@@ -36,6 +38,62 @@ const MacroCalculator = ({ onClose }) => {
     carbs: 45,
     fat: 25
   });
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
+  // Hydrate form with cached data and profile on mount
+  useEffect(() => {
+    const hydrateFromStorage = () => {
+      const storedForm = localStorage.getItem('macroCalculatorForm');
+      if (storedForm) {
+        try {
+          const parsed = JSON.parse(storedForm);
+          setFormData(prev => ({ ...prev, ...parsed }));
+          if (parsed.goal && goals[parsed.goal]) {
+            setCustomRatios(goals[parsed.goal].macroRatio);
+          }
+        } catch (error) {
+          console.warn('Failed to parse cached macro form', error);
+        }
+      }
+    };
+
+    const hydrateFromProfile = async () => {
+      try {
+        const profile = await profileAPI.get();
+        if (profile) {
+          setFormData(prev => ({
+            ...prev,
+            name: profile.name ?? prev.name,
+            age: profile.age ? String(profile.age) : prev.age,
+            gender: profile.gender || prev.gender,
+            weight: profile.weight ? String(profile.weight) : prev.weight,
+            weightUnit: profile.weight_unit || prev.weightUnit,
+            height: profile.height ? String(profile.height) : prev.height,
+            heightUnit: profile.height_unit || prev.heightUnit,
+            activityLevel: profile.activity_level ? String(profile.activity_level) : prev.activityLevel,
+            goal: profile.goal || prev.goal
+          }));
+
+          if (profile.goal && goals[profile.goal]) {
+            setCustomRatios(goals[profile.goal].macroRatio);
+          }
+        }
+      } catch (error) {
+        console.warn('Unable to load profile data', error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    hydrateFromStorage();
+    hydrateFromProfile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist form changes for faster revisit experience
+  useEffect(() => {
+    localStorage.setItem('macroCalculatorForm', JSON.stringify(formData));
+  }, [formData]);
 
   // Activity level options
   const activityLevels = [
@@ -264,7 +322,7 @@ const MacroCalculator = ({ onClose }) => {
   const handleCalculate = (e) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    if (!validateForm() || isLoadingProfile) {
       return;
     }
     

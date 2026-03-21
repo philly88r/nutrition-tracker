@@ -3,17 +3,21 @@ import { Link, useLocation } from 'react-router-dom';
 import { useNutritionContext } from '../../hooks/useNutritionContext';
 
 // Icons
-import { 
-  HomeIcon, 
-  BookOpenIcon, 
-  ArchiveBoxIcon, 
-  BeakerIcon, 
-  ChartBarIcon, 
+import {
+  HomeIcon,
+  BookOpenIcon,
+  ArchiveBoxIcon,
+  BeakerIcon,
+  ChartBarIcon,
   Cog6ToothIcon,
   ChevronRightIcon,
   ChevronDownIcon,
   ShoppingBagIcon,
-  CalculatorIcon
+  CalculatorIcon,
+  ChatBubbleLeftRightIcon,
+  BookmarkIcon,
+  EnvelopeIcon,
+  BoltIcon
 } from '@heroicons/react/24/outline';
 
 const Sidebar = ({ isOpen, isMobile }) => {
@@ -22,10 +26,14 @@ const Sidebar = ({ isOpen, isMobile }) => {
   
   // Navigation items
   const navItems = [
-    { path: '/', icon: HomeIcon, label: 'Dashboard' },
+    { path: '/dashboard', icon: HomeIcon, label: 'Dashboard' },
+    { path: '/nutrition-coach', icon: ChatBubbleLeftRightIcon, label: 'AI Nutrition Coach' },
+    { path: '/saved-recipes', icon: BookmarkIcon, label: 'Saved Recipes' },
     { path: '/macro-calculator', icon: CalculatorIcon, label: 'Macro Calculator' },
     { path: '/progress-reports', icon: ChartBarIcon, label: 'Progress Reports' },
-    { path: '/grocery', icon: ShoppingBagIcon, label: 'Grocery List' }
+    { path: '/grocery', icon: ShoppingBagIcon, label: 'Grocery List' },
+    { path: '/contact', icon: EnvelopeIcon, label: 'Contact Us' },
+    { path: '/upgrade', icon: BoltIcon, label: 'Upgrade to Pro', highlight: true }
   ];
   
   // Check if a nav item is active
@@ -37,6 +45,18 @@ const Sidebar = ({ isOpen, isMobile }) => {
   const NavItem = ({ item }) => {
     const Icon = item.icon;
     const active = isActive(item.path);
+
+    if (item.highlight) {
+      return (
+        <Link
+          to={item.path}
+          className="flex items-center px-4 py-2 my-1 text-sm font-semibold rounded-md transition-all bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-600 hover:to-blue-600"
+        >
+          <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
+          <span>{item.label}</span>
+        </Link>
+      );
+    }
 
     return (
       <Link
@@ -65,11 +85,7 @@ const Sidebar = ({ isOpen, isMobile }) => {
         {/* Logo and app name */}
         <div className="flex items-center h-16 px-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center">
-            <img 
-              src="/images/nutrition-logo.svg" 
-              alt="Nutrition Tracker Logo" 
-              className="h-10 w-10" 
-            />
+            <img src="/images/logo-dark.png" alt="Logo" className="h-14 w-14 object-contain" />
             <h1 className="ml-2 text-xl font-bold text-gray-900 dark:text-white">
               NutriTrack
             </h1>

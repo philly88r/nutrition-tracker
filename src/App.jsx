@@ -8,6 +8,14 @@ import LoginPage from './pages/LoginPage';
 import SettingsPage from './pages/SettingsPage';
 import MacroCalculatorPage from './pages/MacroCalculatorPage';
 import ProgressReports from './pages/ProgressReports';
+import NutritionCoach from './pages/NutritionCoach';
+import SavedRecipes from './pages/SavedRecipes';
+import ContactPage from './pages/ContactPage';
+import UpgradePage from './pages/UpgradePage';
+import LandingPage from './pages/LandingPage';
+import BlogPost from './pages/BlogPost';
+import BlogIndex from './pages/BlogIndex';
+import AdminEmail from './pages/AdminEmail';
 import NotFound from './pages/NotFound';
 import LoadingScreen from './components/UI/LoadingScreen';
 import { AuthProvider, ProtectedRoute } from './context/AuthContext';
@@ -15,9 +23,10 @@ import DataPersister from './components/DataPersister';
 
 const AppRoutes = () => (
   <Routes>
+    <Route path="/" element={<LandingPage />} />
     <Route path="/login" element={<LoginPage />} />
     <Route
-      path="/"
+      path="/dashboard"
       element={
         <ProtectedRoute>
           <Layout>
@@ -76,7 +85,61 @@ const AppRoutes = () => (
         </ProtectedRoute>
       }
     />
-    <Route path="/dashboard" element={<Navigate to="/" replace />} />
+    <Route
+      path="/nutrition-coach"
+      element={
+        <ProtectedRoute>
+          <Layout>
+            <NutritionCoach />
+          </Layout>
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/saved-recipes"
+      element={
+        <ProtectedRoute>
+          <Layout>
+            <SavedRecipes />
+          </Layout>
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/contact"
+      element={
+        <ProtectedRoute>
+          <Layout>
+            <ContactPage />
+          </Layout>
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/upgrade"
+      element={
+        <ProtectedRoute>
+          <Layout>
+            <UpgradePage />
+          </Layout>
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/admin/email"
+      element={
+        <ProtectedRoute>
+          <Layout>
+            <AdminEmail />
+          </Layout>
+        </ProtectedRoute>
+      }
+    />
+    <Route path="/blog" element={<BlogIndex />} />
+    <Route path="/blog/category/:categorySlug" element={<BlogIndex />} />
+    <Route path="/home" element={<Navigate to="/" replace />} />
+    {/* /:slug must be last — catches all WordPress post URLs at root level */}
+    <Route path="/:slug" element={<BlogPost />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

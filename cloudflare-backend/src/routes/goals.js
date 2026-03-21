@@ -31,21 +31,42 @@ goals.get('/', async (c) => {
     ).bind(userId).first();
 
     if (!goalsData) {
-      // Create default goals
-      await db.prepare(`
-        INSERT INTO daily_goals (user_id, calories, protein, carbs, fat, fiber)
-        VALUES (?, 2000, 150, 200, 65, 30)
-      `).bind(userId).run();
+      // Check if user exists in users table (for regular users) or kdp_users table (for KDP buyers)
+      const regularUser = await db.prepare('SELECT id FROM users WHERE id = ?').bind(userId).first();
+      const kdpUser = await db.prepare('SELECT id FROM kdp_users WHERE id = ?').bind(userId).first();
+      
+      if (!regularUser && !kdpUser) {
+        return c.json({ error: 'User not found' }, 404);
+      }
 
-      goalsData = await db.prepare(
-        'SELECT * FROM daily_goals WHERE user_id = ?'
-      ).bind(userId).first();
+      // Create default goals - only if user exists
+      try {
+        await db.prepare(`
+          INSERT INTO daily_goals (user_id, calories, protein, carbs, fat, fiber)
+          VALUES (?, 2000, 150, 200, 65, 30)
+        `).bind(userId).run();
+
+        goalsData = await db.prepare(
+          'SELECT * FROM daily_goals WHERE user_id = ?'
+        ).bind(userId).first();
+      } catch (insertError) {
+        console.error('Error creating default goals:', insertError);
+        // Return default values without saving if insert fails
+        goalsData = {
+          user_id: userId,
+          calories: 2000,
+          protein: 150,
+          carbs: 200,
+          fat: 65,
+          fiber: 30
+        };
+      }
     }
 
     return c.json(goalsData);
   } catch (error) {
     console.error('Error fetching goals:', error);
-    return c.json({ error: 'Server error' }, 500);
+    return c.json({ error: 'Server error', details: error.message }, 500);
   }
 });
 

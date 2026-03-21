@@ -1,11 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Pencil, Calendar as CalendarIcon } from 'lucide-react';
 import MacroTracker from './MacroTracker';
 import { useNutritionContext } from '../hooks/useNutritionContext';
+import EditFoodModal from './EditFoodModal';
 
-const DailyFoodLog = ({ entries, date, onRemoveEntry }) => {
-  const { state } = useNutritionContext();
+const DailyFoodLog = ({ entries, date, onRemoveEntry, onDateChange }) => {
+  const { state, dispatch } = useNutritionContext();
   const userName = localStorage.getItem('userName') || 'Your';
+  const [editingEntry, setEditingEntry] = useState(null);
+  
+  // Use the date prop passed from Dashboard (controlled by Calendar)
+  const displayDate = date;
+  
+  console.log('DailyFoodLog: Received date prop:', date, 'Display:', new Date(date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }));
+
+  const handleEditEntry = (updatedEntry) => {
+    dispatch({ type: 'UPDATE_FOOD_ENTRY', payload: updatedEntry });
+    setEditingEntry(null);
+  };
   
   // Calculate totals
   const totals = entries.reduce((acc, entry) => {
@@ -16,25 +29,44 @@ const DailyFoodLog = ({ entries, date, onRemoveEntry }) => {
     return acc;
   }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
-  // Group entries by meal type
-  const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
+  // Debug: Check mealType values
+  console.log('DailyFoodLog: Entry mealTypes:', entries.map(e => ({ id: e.id, mealType: e.mealType || 'MISSING' })));
+  
+  // Group entries by meal type - include entries without mealType in 'other'
+  const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack', 'other'];
   const entriesByMeal = mealTypes.map(mealType => ({
     type: mealType,
-    entries: entries.filter(entry => entry.mealType === mealType)
+    entries: entries.filter(entry => {
+      if (mealType === 'other') {
+        // Show entries with no mealType or unrecognized mealType
+        return !entry.mealType || !['breakfast', 'lunch', 'dinner', 'snack'].includes(entry.mealType);
+      }
+      return entry.mealType === mealType;
+    })
   }));
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-        <h2 className="text-xl font-bold">{userName}'s Nutrition Tracker</h2>
-        <p className="text-sm text-blue-100 mt-1">
-          {new Date(date).toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}
-        </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-xl font-bold">{userName}'s Nutrition Tracker</h2>
+            <div className="flex items-center mt-1 text-sm text-blue-100">
+              <CalendarIcon className="w-4 h-4 mr-1" />
+              {(() => {
+                // Parse date string to avoid timezone issues
+                const [year, month, day] = displayDate.split('-');
+                const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                return date.toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                });
+              })()}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Nutrition Summary */}
@@ -96,7 +128,7 @@ const DailyFoodLog = ({ entries, date, onRemoveEntry }) => {
                               {entry.servings} × {entry.servingSize}{entry.servingUnit}
                             </div>
                           </div>
-                          <div className="flex items-start gap-3">
+                          <div className="flex items-start gap-2">
                             <div className="text-right">
                               <div className="font-semibold text-blue-700">{entry.calories} kcal</div>
                               <div className="text-xs text-gray-500 space-y-0.5 mt-1">
@@ -129,6 +161,13 @@ const DailyFoodLog = ({ entries, date, onRemoveEntry }) => {
                                 </div>
                               </div>
                             </div>
+                            <button
+                              onClick={() => setEditingEntry(entry)}
+                              className="text-blue-500 hover:text-blue-700 transition-colors"
+                              aria-label="Edit food entry"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
                             <button
                               onClick={() => onRemoveEntry(entry.id)}
                               className="text-red-500 hover:text-red-700 transition-colors"
@@ -181,6 +220,15 @@ const DailyFoodLog = ({ entries, date, onRemoveEntry }) => {
             </Link>
           </p>
         </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingEntry && (
+        <EditFoodModal
+          entry={editingEntry}
+          onSave={handleEditEntry}
+          onClose={() => setEditingEntry(null)}
+        />
       )}
     </div>
   );

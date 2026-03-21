@@ -202,6 +202,16 @@ export const profileAPI = {
   },
 };
 
+// AI API
+export const aiAPI = {
+  quickLog: async ({ mealDescription, mealType, date }) => {
+    return authFetch('/ai/log', {
+      method: 'POST',
+      body: JSON.stringify({ mealDescription, mealType, date }),
+    });
+  },
+};
+
 // KDP API
 export const kdpAPI = {
   validateCode: async (code) => {

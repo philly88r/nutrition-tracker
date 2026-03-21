@@ -8,6 +8,11 @@ import groceryRoutes from './routes/grocery';
 import settingsRoutes from './routes/settings';
 import profileRoutes from './routes/profile';
 import kdpRoutes from './routes/kdp';
+import aiRoutes from './routes/ai';
+import recipesRoutes from './routes/recipes';
+import paymentsRoutes from './routes/payments';
+import blogRoutes from './routes/blog';
+import adminRoutes from './routes/admin';
 
 const app = new Hono();
 
@@ -41,6 +46,11 @@ app.route('/grocery', groceryRoutes);
 app.route('/settings', settingsRoutes);
 app.route('/profile', profileRoutes);
 app.route('/kdp', kdpRoutes);
+app.route('/ai', aiRoutes);
+app.route('/recipes', recipesRoutes);
+app.route('/payments', paymentsRoutes);
+app.route('/blog', blogRoutes);
+app.route('/admin', adminRoutes);
 
 // 404 handler
 app.notFound((c) => {

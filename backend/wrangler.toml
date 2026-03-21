@@ -4,8 +4,8 @@ compatibility_date = "2024-05-29"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "nutrition-db"
-database_id = "PASTE_D1_ID_HERE"
+database_name = "nutrition-tracker-db"
+database_id = "fa8ed5b8-706e-4fbb-a286-3db602f10618"
 
 [vars]
 # Add GEMINI_API_KEY via wrangler secrets

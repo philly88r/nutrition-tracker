@@ -1,18 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Calendar from '../components/Calendar';
-import DashboardSummary from '../components/DashboardSummary';
+import DailyFoodLog from '../components/DailyFoodLog';
 import { useNutritionContext } from '../hooks/useNutritionContext';
 
 const Dashboard = () => {
   const { state, dispatch } = useNutritionContext();
-  const [selectedDate, setSelectedDate] = useState(state.currentDate);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedDateEntries, setSelectedDateEntries] = useState([]);
+
+  // Force selectedDate to current date on mount
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    console.log('Dashboard: Setting initial date to', today);
+    setSelectedDate(today);
+    dispatch({ type: 'SET_CURRENT_DATE', payload: today });
+  }, []);
+  
+  // Log selectedDate whenever it changes
+  useEffect(() => {
+    console.log('Dashboard: selectedDate changed to', selectedDate);
+  }, [selectedDate]);
 
   // Update selected date entries when date or food entries change
   useEffect(() => {
-    if (selectedDate && state.foodEntries.length > 0) {
+    const entryDates = state.foodEntries.map(e => e.date).join(', ');
+    const debugInfo = `Total Entries: ${state.foodEntries.length}\nSelected Date: ${selectedDate}\nEntry Dates: ${entryDates || 'none'}`;
+    console.log('=== DASHBOARD DEBUG ===');
+    console.log(debugInfo);
+    console.log('======================');
+    
+    if (state.foodEntries.length > 0) {
       const dateEntries = state.foodEntries.filter(entry => entry.date === selectedDate);
+      console.log(`Filtered ${dateEntries.length} entries for ${selectedDate}`);
       setSelectedDateEntries(dateEntries);
     } else {
       setSelectedDateEntries([]);
@@ -70,7 +90,12 @@ const Dashboard = () => {
       <div className="grid gap-6 lg:grid-cols-12">
         {/* Main content */}
         <div className="lg:col-span-8 space-y-6">
-          <DashboardSummary />
+          <DailyFoodLog 
+            entries={selectedDateEntries}
+            date={selectedDate}
+            onRemoveEntry={handleRemoveEntry}
+            onDateChange={handleSelectDate}
+          />
         </div>
 
         {/* Sidebar column */}

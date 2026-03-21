@@ -62,7 +62,7 @@ kdp.post('/register', async (c) => {
     }
 
     const existing = await db.prepare(
-      'SELECT id FROM kdp_users WHERE email = ?'
+      'SELECT id FROM users WHERE email = ?'
     ).bind(email).first();
     if (existing) {
       return c.json({ error: 'Email already registered' }, 400);
@@ -70,9 +70,10 @@ kdp.post('/register', async (c) => {
 
     const pinHash = await bcrypt.hash(pin, 10);
 
+    // Book code users get pro subscription automatically
     const result = await db.prepare(
-      'INSERT INTO kdp_users (email, pin_hash, access_code_hash) VALUES (?, ?, ?)'
-    ).bind(email, pinHash, codeHash).run();
+      'INSERT INTO users (email, pin_hash, access_code_hash, subscription_status, subscription_type, auth_type) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(email, pinHash, codeHash, 'pro', 'book_lifetime', 'kdp').run();
     const userId = result.meta.last_row_id;
 
     // Update used count (only on registration)
@@ -105,8 +106,8 @@ kdp.post('/login', async (c) => {
     }
     const db = c.env.DB;
     const user = await db.prepare(
-      'SELECT id, email, pin_hash FROM kdp_users WHERE email = ?'
-    ).bind(email).first();
+      'SELECT id, email, pin_hash, subscription_status FROM users WHERE email = ? AND auth_type = ?'
+    ).bind(email, 'kdp').first();
     if (!user) {
       return c.json({ error: 'Invalid credentials' }, 401);
     }
@@ -115,12 +116,13 @@ kdp.post('/login', async (c) => {
       return c.json({ error: 'Invalid credentials' }, 401);
     }
 
+    // Update last login
     await db.prepare(
-      'UPDATE kdp_users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?'
+      'UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?'
     ).bind(user.id).run();
 
     const token = await sign(
-      { userId: user.id, email: user.email, auth_type: 'kdp', exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) },
+      { userId: user.id, email: user.email, auth_type: 'kdp', subscription_status: user.subscription_status, exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) },
       c.env.JWT_SECRET
     );
 

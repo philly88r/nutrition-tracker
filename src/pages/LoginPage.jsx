@@ -1,349 +1,248 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useNutritionContext } from '../hooks/useNutritionContext';
 import { useAuth } from '../context/AuthContext';
 import { authAPI, kdpAPI } from '../services/apiService';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('');
-  const [pin, setPin] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [kdpBookCode, setKdpBookCode] = useState('');
-  const [kdpEmail, setKdpEmail] = useState('');
-  const [kdpPin, setKdpPin] = useState('');
-  const [kdpError, setKdpError] = useState('');
-  const [kdpStep, setKdpStep] = useState('code'); // code | register
-  const [kdpIsLoading, setKdpIsLoading] = useState(false);
-  const [kdpSuccess, setKdpSuccess] = useState('');
-  const [kdpMode, setKdpMode] = useState('login'); // login | register
+  const [tab, setTab] = useState('login'); // 'login' | 'register' | 'kdp'
   const navigate = useNavigate();
-  const { state, dispatch } = useNutritionContext();
   const { login, isAuthenticated } = useAuth();
 
-  // Check if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/');
-    }
+    if (isAuthenticated) navigate('/');
   }, [isAuthenticated, navigate]);
 
-  const handlePinChange = (e) => {
-    const value = e.target.value;
-    // Only allow numbers and limit to 6 digits
-    if (/^\d*$/.test(value) && value.length <= 6) {
-      setPin(value);
-      setError('');
+  // --- Standard auth state ---
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError]   = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthLoading(true);
+    try {
+      const res = await authAPI.login(email.trim(), password);
+      login(res.token, res.user.email);
+      navigate('/');
+    } catch (err) {
+      setAuthError(err.message || 'Login failed. Check your email and password.');
+    } finally {
+      setAuthLoading(false);
     }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthLoading(true);
+    try {
+      const res = await authAPI.register(email.trim(), password);
+      login(res.token, res.user.email);
+      navigate('/');
+    } catch (err) {
+      setAuthError(err.message || 'Registration failed. Please try again.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // --- KDP state ---
+  const [kdpMode, setKdpMode]       = useState('login'); // 'login' | 'register'
+  const [kdpStep, setKdpStep]       = useState('code');  // 'code' | 'register'
+  const [kdpBookCode, setKdpBookCode] = useState('');
+  const [kdpEmail, setKdpEmail]     = useState('');
+  const [kdpPin, setKdpPin]         = useState('');
+  const [kdpError, setKdpError]     = useState('');
+  const [kdpSuccess, setKdpSuccess] = useState('');
+  const [kdpLoading, setKdpLoading] = useState(false);
+
+  const handleKdpPinChange = (e) => {
+    const v = e.target.value;
+    if (/^\d*$/.test(v) && v.length <= 6) { setKdpPin(v); setKdpError(''); }
   };
 
   const handleKdpValidate = async (e) => {
     e.preventDefault();
-    setKdpError('');
-    setKdpSuccess('');
-    setKdpIsLoading(true);
+    setKdpError(''); setKdpSuccess(''); setKdpLoading(true);
     try {
       await kdpAPI.validateCode(kdpBookCode.trim());
       setKdpStep('register');
-      setKdpSuccess('Code validated. Enter your email and create a 6-digit PIN.');
+      setKdpSuccess('Code validated! Enter your email and create a 6-digit PIN.');
     } catch (err) {
       setKdpError(err.message || 'Invalid code. Please check your book code.');
-    } finally {
-      setKdpIsLoading(false);
-    }
+    } finally { setKdpLoading(false); }
   };
 
   const handleKdpRegister = async (e) => {
     e.preventDefault();
-    setKdpError('');
-    setKdpSuccess('');
-    setKdpIsLoading(true);
+    setKdpError(''); setKdpSuccess(''); setKdpLoading(true);
     try {
-      const response = await kdpAPI.register(
-        kdpBookCode.trim(),
-        kdpEmail.trim(),
-        kdpPin
-      );
-      login(response.token, response.user.email);
+      const res = await kdpAPI.register(kdpBookCode.trim(), kdpEmail.trim(), kdpPin);
+      login(res.token, res.user.email);
       navigate('/');
     } catch (err) {
       setKdpError(err.message || 'Registration failed. Please try again.');
-    } finally {
-      setKdpIsLoading(false);
-    }
+    } finally { setKdpLoading(false); }
   };
 
   const handleKdpLogin = async (e) => {
     e.preventDefault();
-    setKdpError('');
-    setKdpSuccess('');
-    setKdpIsLoading(true);
+    setKdpError(''); setKdpSuccess(''); setKdpLoading(true);
     try {
-      const response = await kdpAPI.login(kdpEmail.trim(), kdpPin);
-      login(response.token, response.user.email);
+      const res = await kdpAPI.login(kdpEmail.trim(), kdpPin);
+      login(res.token, res.user.email);
       navigate('/');
     } catch (err) {
       setKdpError(err.message || 'Login failed. Please try again.');
-    } finally {
-      setKdpIsLoading(false);
-    }
+    } finally { setKdpLoading(false); }
   };
 
-  const handleKdpPinChange = (e) => {
-    const value = e.target.value;
-    if (/^\d*$/.test(value) && value.length <= 6) {
-      setKdpPin(value);
-      setKdpError('');
-    }
-  };
-
-  const resetKdp = () => {
-    setKdpBookCode('');
-    setKdpEmail('');
-    setKdpPin('');
-    setKdpError('');
-    setKdpSuccess('');
-    setKdpStep('code');
-    setKdpMode('login');
-  };
-
-  const switchKdpMode = (mode) => {
-    setKdpMode(mode);
-    setKdpError('');
-    setKdpSuccess('');
-    if (mode === 'register') {
-      setKdpStep('code');
-      setKdpBookCode('');
-      setKdpEmail('');
-      setKdpPin('');
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-    
-    try {
-      // Verify PIN with backend (backend will find user by PIN)
-      const response = await authAPI.verifyPin(null, pin);
-      
-      // Login with token and email from response
-      login(response.token, response.user.email);
-      
-      // Redirect to dashboard
-      navigate('/');
-    } catch (err) {
-      setError(err.message || 'Invalid PIN. Please try again.');
-      setPin('');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const inputClass = "w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg placeholder-gray-400 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm";
+  const btnPrimary = "w-full py-3 px-4 text-sm font-semibold rounded-lg text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors";
+  const btnSecondary = "w-full py-3 px-4 text-sm font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md">
-        <div className="text-center">
-          <img 
-            src="/images/nutrition-logo.svg" 
-            alt="NutriTrack Logo" 
-            className="mx-auto h-16 w-16" 
-          />
-          <h1 className="mt-4 text-3xl font-extrabold text-gray-900 dark:text-white">
-            NutriTrack
-          </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Please enter your 6-digit PIN to access your nutrition tracker
-          </p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 py-12">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <img src="/images/logo-dark.png" alt="NutriTrack" className="mx-auto h-28 w-28 object-contain" />
+          <h1 className="mt-4 text-3xl font-extrabold text-gray-900 dark:text-white">NutriTrack</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Your AI-powered nutrition companion</p>
         </div>
-        
-        {/* Legacy PIN login (unchanged) */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="pin" className="sr-only">PIN</label>
-            <input
-              id="pin"
-              name="pin"
-              type="password"
-              required
-              value={pin}
-              onChange={handlePinChange}
-              className="appearance-none rounded-md relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-500 text-gray-900 dark:text-white dark:bg-gray-700 text-center text-2xl tracking-widest focus:outline-none focus:ring-primary focus:border-primary focus:z-10"
-              placeholder="• • • • • •"
-              maxLength={6}
-            />
-          </div>
 
-          {error && (
-            <div className="text-red-500 text-center text-sm">
-              {error}
-            </div>
-          )}
-
-          <div>
+        {/* Tab switcher */}
+        <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6">
+          {[
+            { key: 'login',    label: 'Sign In' },
+            { key: 'register', label: 'Sign Up' },
+            { key: 'kdp',      label: '📖 Book Code' },
+          ].map(({ key, label }) => (
             <button
-              type="submit"
-              disabled={pin.length !== 6 || isLoading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:bg-gray-400 disabled:cursor-not-allowed"
+              key={key}
+              onClick={() => { setTab(key); setAuthError(''); setKdpError(''); }}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
+                tab === key
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
             >
-              {isLoading ? 'Verifying...' : 'Unlock'}
+              {label}
             </button>
-          </div>
-          
-          <div className="text-center text-xs text-gray-500 dark:text-gray-400 mt-4">
-            Default PIN: 123456<br/>
-            <span className="text-xs">First time? Your PIN will be created automatically</span>
-          </div>
-        </form>
-
-        {/* Divider */}
-        <div className="flex items-center gap-3 text-xs text-gray-400">
-          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-          <span>KDP Buyers</span>
-          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+          ))}
         </div>
 
-        {/* KDP Flow */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">KDP Access</h3>
-            <div className="flex items-center gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => switchKdpMode('login')}
-                className={`px-3 py-1 rounded-md ${kdpMode === 'login' ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}
-              >
-                Login
-              </button>
-              <button
-                type="button"
-                onClick={() => switchKdpMode('register')}
-                className={`px-3 py-1 rounded-md ${kdpMode === 'register' ? 'bg-secondary text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}
-              >
-                Register
-              </button>
-              <button
-                type="button"
-                onClick={resetKdp}
-                className="text-xs text-primary hover:underline"
-              >
-                Reset
-              </button>
-            </div>
-          </div>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-5">
 
-          {kdpMode === 'login' && (
-            <form className="space-y-4" onSubmit={handleKdpLogin}>
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <label htmlFor="kdp-login-email" className="sr-only">Email</label>
-                  <input
-                    id="kdp-login-email"
-                    type="email"
-                    required
-                    value={kdpEmail}
-                    onChange={(e) => setKdpEmail(e.target.value)}
-                    className="appearance-none rounded-md block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-500 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-primary focus:border-primary"
-                    placeholder="Email"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="kdp-login-pin" className="sr-only">6-digit PIN</label>
-                  <input
-                    id="kdp-login-pin"
-                    type="password"
-                    required
-                    value={kdpPin}
-                    onChange={handleKdpPinChange}
-                    maxLength={6}
-                    className="appearance-none rounded-md block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-500 text-gray-900 dark:text-white dark:bg-gray-700 text-center tracking-widest focus:outline-none focus:ring-primary focus:border-primary"
-                    placeholder="••••••"
-                  />
-                </div>
+          {/* --- SIGN IN --- */}
+          {tab === 'login' && (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className={inputClass} />
               </div>
-              {kdpError && <div className="text-red-500 text-sm text-center">{kdpError}</div>}
-              {kdpSuccess && <div className="text-green-600 text-sm text-center">{kdpSuccess}</div>}
-              <button
-                type="submit"
-                disabled={!kdpEmail || kdpPin.length !== 6 || kdpIsLoading}
-                className="w-full py-3 px-4 text-sm font-medium rounded-md text-white bg-secondary hover:bg-secondary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {kdpIsLoading ? 'Signing in...' : 'Login'}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                <input type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className={inputClass} />
+              </div>
+              {authError && <p className="text-red-500 text-sm text-center">{authError}</p>}
+              <button type="submit" disabled={authLoading} className={btnPrimary}>
+                {authLoading ? 'Signing in...' : 'Sign In'}
               </button>
+              <p className="text-center text-xs text-gray-500 dark:text-gray-400">
+                Don't have an account?{' '}
+                <button type="button" onClick={() => setTab('register')} className="text-blue-600 hover:underline font-medium">Sign up free</button>
+              </p>
             </form>
           )}
 
-          {kdpMode === 'register' && (
-            <>
-              {kdpStep === 'code' && (
-                <form className="space-y-4" onSubmit={handleKdpValidate}>
-                  <div>
-                    <label htmlFor="kdp-code" className="sr-only">Book Code</label>
-                    <input
-                      id="kdp-code"
-                      name="kdp-code"
-                      type="text"
-                      required
-                      value={kdpBookCode}
-                      onChange={(e) => setKdpBookCode(e.target.value)}
-                      className="appearance-none rounded-md block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-500 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-primary focus:border-primary"
-                      placeholder="Enter book code"
-                    />
-                  </div>
-                  {kdpError && <div className="text-red-500 text-sm text-center">{kdpError}</div>}
-                  {kdpSuccess && <div className="text-green-600 text-sm text-center">{kdpSuccess}</div>}
+          {/* --- SIGN UP --- */}
+          {tab === 'register' && (
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                <input type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 6 characters" className={inputClass} />
+              </div>
+              {authError && <p className="text-red-500 text-sm text-center">{authError}</p>}
+              <button type="submit" disabled={authLoading} className={btnPrimary}>
+                {authLoading ? 'Creating account...' : 'Create Account'}
+              </button>
+              <p className="text-center text-xs text-gray-500 dark:text-gray-400">
+                Already have an account?{' '}
+                <button type="button" onClick={() => setTab('login')} className="text-blue-600 hover:underline font-medium">Sign in</button>
+              </p>
+            </form>
+          )}
+
+          {/* --- KDP BOOK CODE --- */}
+          {tab === 'kdp' && (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                Purchased the book? Use your included code to unlock access.
+              </p>
+
+              {/* Login / Register toggle */}
+              <div className="flex gap-2">
+                {['login', 'register'].map(m => (
                   <button
-                    type="submit"
-                    disabled={!kdpBookCode || kdpIsLoading}
-                    className="w-full py-3 px-4 text-sm font-medium rounded-md text-white bg-secondary hover:bg-secondary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    key={m}
+                    type="button"
+                    onClick={() => { setKdpMode(m); setKdpError(''); setKdpSuccess(''); setKdpStep('code'); setKdpBookCode(''); setKdpEmail(''); setKdpPin(''); }}
+                    className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors ${
+                      kdpMode === m
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
+                    }`}
                   >
-                    {kdpIsLoading ? 'Validating...' : 'Validate Book Code'}
+                    {m === 'login' ? 'Already Registered' : 'New Registration'}
+                  </button>
+                ))}
+              </div>
+
+              {/* KDP Login */}
+              {kdpMode === 'login' && (
+                <form onSubmit={handleKdpLogin} className="space-y-3">
+                  <input type="email" required value={kdpEmail} onChange={e => setKdpEmail(e.target.value)} placeholder="Email" className={inputClass} />
+                  <input type="password" required value={kdpPin} onChange={handleKdpPinChange} maxLength={6} placeholder="6-digit PIN" className={`${inputClass} text-center tracking-widest`} />
+                  {kdpError && <p className="text-red-500 text-sm text-center">{kdpError}</p>}
+                  <button type="submit" disabled={!kdpEmail || kdpPin.length !== 6 || kdpLoading} className={btnSecondary}>
+                    {kdpLoading ? 'Signing in...' : 'Sign In with Book Code'}
                   </button>
                 </form>
               )}
 
-              {kdpStep === 'register' && (
-                <form className="space-y-4" onSubmit={handleKdpRegister}>
-                  <div className="grid grid-cols-1 gap-3">
-                    <div>
-                      <label htmlFor="kdp-email" className="sr-only">Email</label>
-                      <input
-                        id="kdp-email"
-                        type="email"
-                        required
-                        value={kdpEmail}
-                        onChange={(e) => setKdpEmail(e.target.value)}
-                        className="appearance-none rounded-md block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-500 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-primary focus:border-primary"
-                        placeholder="Email"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="kdp-pin" className="sr-only">6-digit PIN</label>
-                      <input
-                        id="kdp-pin"
-                        type="password"
-                        required
-                        value={kdpPin}
-                        onChange={handleKdpPinChange}
-                        maxLength={6}
-                        className="appearance-none rounded-md block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-500 text-gray-900 dark:text-white dark:bg-gray-700 text-center tracking-widest focus:outline-none focus:ring-primary focus:border-primary"
-                        placeholder="••••••"
-                      />
-                    </div>
-                  </div>
-                  {kdpError && <div className="text-red-500 text-sm text-center">{kdpError}</div>}
-                  {kdpSuccess && <div className="text-green-600 text-sm text-center">{kdpSuccess}</div>}
-                  <button
-                    type="submit"
-                    disabled={!kdpEmail || kdpPin.length !== 6 || kdpIsLoading}
-                    className="w-full py-3 px-4 text-sm font-medium rounded-md text-white bg-secondary hover:bg-secondary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
-                    {kdpIsLoading ? 'Creating account...' : 'Register & Unlock'}
-                  </button>
-                </form>
+              {/* KDP Register */}
+              {kdpMode === 'register' && (
+                <>
+                  {kdpStep === 'code' && (
+                    <form onSubmit={handleKdpValidate} className="space-y-3">
+                      <input type="text" required value={kdpBookCode} onChange={e => setKdpBookCode(e.target.value)} placeholder="Enter your book code" className={inputClass} />
+                      {kdpError && <p className="text-red-500 text-sm text-center">{kdpError}</p>}
+                      <button type="submit" disabled={!kdpBookCode || kdpLoading} className={btnSecondary}>
+                        {kdpLoading ? 'Validating...' : 'Validate Book Code'}
+                      </button>
+                    </form>
+                  )}
+                  {kdpStep === 'register' && (
+                    <form onSubmit={handleKdpRegister} className="space-y-3">
+                      {kdpSuccess && <p className="text-green-600 text-sm text-center">{kdpSuccess}</p>}
+                      <input type="email" required value={kdpEmail} onChange={e => setKdpEmail(e.target.value)} placeholder="Email" className={inputClass} />
+                      <input type="password" required value={kdpPin} onChange={handleKdpPinChange} maxLength={6} placeholder="Create a 6-digit PIN" className={`${inputClass} text-center tracking-widest`} />
+                      {kdpError && <p className="text-red-500 text-sm text-center">{kdpError}</p>}
+                      <button type="submit" disabled={!kdpEmail || kdpPin.length !== 6 || kdpLoading} className={btnSecondary}>
+                        {kdpLoading ? 'Creating account...' : 'Register & Unlock'}
+                      </button>
+                    </form>
+                  )}
+                </>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>

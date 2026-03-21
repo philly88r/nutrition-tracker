@@ -9,10 +9,19 @@ binding = "DB"
 database_name = "nutrition-tracker-db"
 database_id = "fa8ed5b8-706e-4fbb-a286-3db602f10618"
 
+# Workers AI binding
+[ai]
+binding = "AI"
+
 # Environment variables
 [vars]
 ENVIRONMENT = "production"
 ALLOWED_ORIGINS = "https://macronutritiontracker.netlify.app,http://localhost:5173,http://localhost:3000"
+FRONTEND_URL = "https://macronutritiontracker.netlify.app"
 
 # Secrets (set with: wrangler secret put SECRET_NAME)
-# JWT_SECRET - set via: wrangler secret put JWT_SECRET
+# JWT_SECRET            - wrangler secret put JWT_SECRET
+# STRIPE_SECRET_KEY     - wrangler secret put STRIPE_SECRET_KEY
+# STRIPE_PRICE_ID       - wrangler secret put STRIPE_PRICE_ID
+# STRIPE_WEBHOOK_SECRET - wrangler secret put STRIPE_WEBHOOK_SECRET
+# RESEND_API_KEY        - wrangler secret put RESEND_API_KEY (for sending emails)

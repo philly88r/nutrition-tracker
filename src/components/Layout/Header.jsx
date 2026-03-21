@@ -76,8 +76,8 @@ const Header = ({ toggleSidebar }) => {
     }
   };
 
-  // Format the current date
-  const formattedDate = format(new Date(state.currentDate), 'EEEE, MMMM d, yyyy');
+  // Format the current date - always use today's date
+  const formattedDate = format(new Date(), 'EEEE, MMMM d, yyyy');
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm h-16 flex items-center z-10">
