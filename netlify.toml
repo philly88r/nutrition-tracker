@@ -2,6 +2,9 @@
   command = "npm run build"
   publish = "dist"
 
+[build.environment]
+  VITE_API_URL = "https://nutrition-tracker-api.private-label-products.workers.dev"
+
 [dev]
   command = "npm run dev"
   port = 5173
