@@ -139,7 +139,14 @@ What would you like help with today?`
           itemsSaved: data.itemsSaved
         }]);
         // Refresh grocery list in context
-        dispatch({ type: 'SYNC_FROM_SERVER' });
+        dispatch({ type: 'LOAD_USER_DATA' });
+      } else if (data.action === 'meal_logged') {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: data.response
+        }]);
+        // Refresh food entries so dashboard updates immediately
+        dispatch({ type: 'LOAD_USER_DATA' });
       } else {
         setMessages(prev => [...prev, {
           role: 'assistant',
