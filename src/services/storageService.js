@@ -56,7 +56,11 @@ export const loadUserData = async () => {
     let dailyGoals = null;
     let groceryItems = [];
     
+    const authToken = localStorage.getItem('authToken');
     try {
+      if (!authToken) {
+        throw new Error('No auth token, skipping backend fetch');
+      }
       // Load from backend API
       console.log('StorageService: Fetching data from backend...');
       const [foodData, goalsData, profileData] = await Promise.all([
@@ -80,7 +84,13 @@ export const loadUserData = async () => {
         hasProfile: !!profileData
       });
       
-      foodEntries = foodData || [];
+      // Normalize snake_case DB columns to camelCase
+      foodEntries = (foodData || []).map(e => ({
+        ...e,
+        mealType: e.mealType || e.meal_type,
+        servingSize: e.servingSize ?? e.serving_size,
+        servingUnit: e.servingUnit || e.serving_unit,
+      }));
       dailyGoals = goalsData;
       
       // Save profile name to localStorage for quick access
@@ -110,9 +120,14 @@ export const loadUserData = async () => {
       localforage.getItem('currentDate')
     ]);
     
-    // Use backend data if available, otherwise use local
-    if (!dailyGoals && localGoals) {
+    // Prefer localforage goals if they were explicitly saved by the user,
+    // since D1 may contain stale defaults (2000/150/200/65).
+    // localforage is only written after the user applies goals, so if it
+    // has a value it is always more recent than the D1 default.
+    if (localGoals) {
       dailyGoals = localGoals;
+    } else if (!dailyGoals) {
+      dailyGoals = null; // will fall back to hardcoded defaults below
     }
     if (foodEntries.length === 0 && localFoodEntries && localFoodEntries.length > 0) {
       foodEntries = localFoodEntries;

@@ -77,20 +77,18 @@ goals.put('/', async (c) => {
     const { calories, protein, carbs, fat, fiber } = await c.req.json();
     const db = c.env.DB;
 
-    const result = await db.prepare(`
-      UPDATE daily_goals SET
-        calories = ?, protein = ?, carbs = ?, fat = ?, fiber = ?,
+    // UPSERT — inserts on first save, updates on all subsequent saves
+    await db.prepare(`
+      INSERT INTO daily_goals (user_id, calories, protein, carbs, fat, fiber, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(user_id) DO UPDATE SET
+        calories = excluded.calories,
+        protein = excluded.protein,
+        carbs = excluded.carbs,
+        fat = excluded.fat,
+        fiber = excluded.fiber,
         updated_at = CURRENT_TIMESTAMP
-      WHERE user_id = ?
-    `).bind(calories, protein, carbs, fat, fiber, userId).run();
-
-    if (result.meta.changes === 0) {
-      // Create if doesn't exist
-      await db.prepare(`
-        INSERT INTO daily_goals (user_id, calories, protein, carbs, fat, fiber)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).bind(userId, calories, protein, carbs, fat, fiber).run();
-    }
+    `).bind(userId, calories, protein, carbs, fat, fiber).run();
 
     return c.json({ message: 'Goals updated successfully' });
   } catch (error) {
