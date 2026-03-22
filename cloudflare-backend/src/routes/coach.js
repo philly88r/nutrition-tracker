@@ -387,7 +387,7 @@ Return accurate nutrition values per serving.`;
       ).run();
 
       return c.json({
-        response: `Logged! **${entry.name}** added to your ${entry.mealType || 'food diary'} — ${entry.calories} kcal, ${entry.protein}g protein, ${entry.carbs}g carbs, ${entry.fat}g fat. Check your Dashboard to see it! ✅`,
+        response: `Logged! **${entry.name}** added to your ${entry.mealType || 'food diary'} — ${entry.calories} kcal, ${entry.protein}g protein, ${entry.carbs}g carbs, ${entry.fat}g fat. ✅ **Refresh the screen to see it on your Dashboard.**`,
         action: 'meal_logged'
       });
     }
