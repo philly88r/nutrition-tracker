@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNutritionContext } from '../hooks/useNutritionContext';
-import { profileAPI, goalsAPI } from '../services/apiService';
-import localforage from 'localforage';
+import { profileAPI } from '../services/apiService';
 
 /**
  * Macro Calculator Component
@@ -371,12 +370,6 @@ const MacroCalculator = ({ onClose }) => {
         fat: results.macros.fat,
         fiber: results.macros.fiber
       };
-
-      // Write directly to localforage FIRST — this is what loadData() reads on refresh
-      await localforage.setItem('dailyGoals', newGoals);
-
-      // Also save to D1 (best-effort, non-blocking)
-      goalsAPI.update(newGoals).catch(err => console.warn('Failed to sync goals to D1:', err));
 
       // Save profile to backend database
       await profileAPI.update({

@@ -1,7 +1,8 @@
 import { createContext, useReducer, useEffect, useRef, useContext, useCallback } from 'react';
 import nutritionReducer from './nutritionReducer';
 import { loadUserData, saveUserData } from '../services/storageService';
-import { foodEntriesAPI, groceryAPI } from '../services/apiService';
+import { foodEntriesAPI, groceryAPI, goalsAPI } from '../services/apiService';
+import localforage from 'localforage';
 import AuthContext from './AuthContext';
 
 // Initial state
@@ -172,7 +173,18 @@ export const NutritionProvider = ({ children }) => {
     }
 
     dispatch(action);
-    
+
+    // Persist goals immediately from the action payload — no stale state risk
+    if (action.type === 'UPDATE_DAILY_GOALS' && action.payload) {
+      const goals = action.payload;
+      localforage.setItem('dailyGoals', goals).catch(err =>
+        console.warn('Failed to persist goals to localforage:', err)
+      );
+      goalsAPI.update(goals).catch(err =>
+        console.warn('Failed to sync goals to D1:', err)
+      );
+    }
+
     // Sync specific actions to backend immediately
     if (action.type === 'ADD_FOOD_ENTRY' && action.payload) {
       foodEntriesAPI.create({
