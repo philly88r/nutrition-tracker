@@ -61,18 +61,25 @@ const MacroCalculator = ({ onClose }) => {
       try {
         const profile = await profileAPI.get();
         if (profile) {
-          setFormData(prev => ({
-            ...prev,
-            name: profile.name ?? prev.name,
-            age: profile.age ? String(profile.age) : prev.age,
-            gender: profile.gender || prev.gender,
-            weight: profile.weight ? String(profile.weight) : prev.weight,
-            weightUnit: profile.weight_unit || prev.weightUnit,
-            height: profile.height ? String(profile.height) : prev.height,
-            heightUnit: profile.height_unit || prev.heightUnit,
-            activityLevel: profile.activity_level ? String(profile.activity_level) : prev.activityLevel,
-            goal: profile.goal || prev.goal
-          }));
+          setFormData(prev => {
+            const merged = {
+              ...prev,
+              name: profile.name || prev.name,
+              age: profile.age ? String(profile.age) : prev.age,
+              gender: profile.gender || prev.gender,
+              weight: profile.weight ? String(profile.weight) : prev.weight,
+              weightUnit: profile.weight_unit || prev.weightUnit,
+              height: profile.height ? String(profile.height) : prev.height,
+              heightUnit: profile.height_unit || prev.heightUnit,
+              activityLevel: profile.activity_level ? String(profile.activity_level) : prev.activityLevel,
+              goal: profile.goal || prev.goal
+            };
+            // Persist merged data so it survives future API failures
+            if (merged.name || merged.age || merged.weight) {
+              localStorage.setItem('macroCalculatorForm', JSON.stringify(merged));
+            }
+            return merged;
+          });
 
           if (profile.goal && goals[profile.goal]) {
             setCustomRatios(goals[profile.goal].macroRatio);
@@ -353,6 +360,9 @@ const MacroCalculator = ({ onClose }) => {
         localStorage.setItem('userName', formData.name);
       }
       
+      // Cache form data to localStorage so it survives future sessions
+      localStorage.setItem('macroCalculatorForm', JSON.stringify(formData));
+
       // Save profile to backend database
       await profileAPI.update({
         name: formData.name,
