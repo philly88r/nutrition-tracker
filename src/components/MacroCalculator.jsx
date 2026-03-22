@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNutritionContext } from '../hooks/useNutritionContext';
 import { profileAPI, goalsAPI } from '../services/apiService';
+import localforage from 'localforage';
 
 /**
  * Macro Calculator Component
@@ -363,14 +364,19 @@ const MacroCalculator = ({ onClose }) => {
       // Cache form data to localStorage so it survives future sessions
       localStorage.setItem('macroCalculatorForm', JSON.stringify(formData));
 
-      // Save new goals directly to backend (bypasses stale closure in context)
-      await goalsAPI.update({
+      const newGoals = {
         calories: results.targetCalories,
         protein: results.macros.protein,
         carbs: results.macros.carbs,
         fat: results.macros.fat,
         fiber: results.macros.fiber
-      });
+      };
+
+      // Write directly to localforage FIRST — this is what loadData() reads on refresh
+      await localforage.setItem('dailyGoals', newGoals);
+
+      // Also save to D1 (best-effort, non-blocking)
+      goalsAPI.update(newGoals).catch(err => console.warn('Failed to sync goals to D1:', err));
 
       // Save profile to backend database
       await profileAPI.update({
@@ -390,13 +396,7 @@ const MacroCalculator = ({ onClose }) => {
       // Update goals in context
       dispatch({
         type: 'UPDATE_DAILY_GOALS',
-        payload: {
-          calories: results.targetCalories,
-          protein: results.macros.protein,
-          carbs: results.macros.carbs,
-          fat: results.macros.fat,
-          fiber: results.macros.fiber
-        }
+        payload: newGoals
       });
       
       dispatch({ type: 'SAVE_USER_DATA' });
