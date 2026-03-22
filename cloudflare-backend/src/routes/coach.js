@@ -99,8 +99,9 @@ export const coachHandler = async (c) => {
     const db = c.env.DB;
 
     const isGroceryBuild = /build.*(grocery|shopping|groceries|list)|grocery.*(list|week)|shopping.*(list|week)/i.test(message);
-    const isRecipeRequest = /find.*(recipe|meal|dish)|search.*(recipe|meal)|recipe.*(for|with|that)|make.*(recipe|meal)|save.*(recipe|this)/i.test(message);
-    const isLogMeal = /^(log|i (just |had |ate |consumed |just ate |just had )|just ate|just had|log (my|a|this)|add (this|to my log|to my diary))/i.test(message);
+    const isUpdateMeal = /\b(change|update|edit|modify|correct|fix|adjust)\b.{0,60}(slice|piece|serving|cup|gram|oz|portion|amount|calorie|entry|log)|from \d+\s*(slice|piece|serving|cup|gram|oz)?\s*to \d+|i (actually|just)? ?(had|ate) \d+\b/i.test(message);
+    const isRecipeRequest = !isUpdateMeal && /find.*(recipe|meal|dish)|search.*(recipe|meal)|recipe.*(for|with|that)|make.*(recipe|meal)|save.*(recipe|this)/i.test(message);
+    const isLogMeal = !isUpdateMeal && /^(log|i (just |had |ate |consumed |just ate |just had )|just ate|just had|log (my|a|this)|add (this|to my log|to my diary))/i.test(message);
     const isLogImage = !!imageFile && /log|add to (my )?(log|diary)|ate|had|consumed/i.test(message);
     const hasStore = context.groceryStore && context.groceryStore.trim() !== '';
 
@@ -115,6 +116,71 @@ export const coachHandler = async (c) => {
         binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
       }
       imageUrl = `data:${imageFile.type};base64,${btoa(binary)}`;
+    }
+
+    // --- UPDATE / EDIT A LOGGED MEAL ---
+    if (isUpdateMeal) {
+      const today = new Date().toISOString().slice(0, 10);
+      const { results: recentEntries } = await db.prepare(
+        `SELECT id, name, meal_type, servings, serving_size, serving_unit, calories, protein, carbs, fat, fiber, sugar
+         FROM food_entries WHERE user_id = ? AND date = ? ORDER BY created_at DESC LIMIT 15`
+      ).bind(userId, today).all();
+
+      if (!recentEntries || recentEntries.length === 0) {
+        return c.json({ response: "I don't see any food entries logged today to update. Try logging your meal first!" });
+      }
+
+      const updateSchema = {
+        type: 'object',
+        properties: {
+          entryId:        { type: 'string', description: 'ID of the entry to update' },
+          newServings:    { type: 'number', description: 'New serving count' },
+          newCalories:    { type: 'number' },
+          newProtein:     { type: 'number' },
+          newCarbs:       { type: 'number' },
+          newFat:         { type: 'number' },
+          newFiber:       { type: 'number' },
+          newSugar:       { type: 'number' },
+          newServingSize: { type: 'number' },
+          newServingUnit: { type: 'string' }
+        },
+        required: ['entryId', 'newServings', 'newCalories', 'newProtein', 'newCarbs', 'newFat', 'newFiber', 'newSugar', 'newServingSize', 'newServingUnit']
+      };
+
+      const entriesList = recentEntries.map(e =>
+        `ID:${e.id} | ${e.name} | ${e.servings} x ${e.serving_size}${e.serving_unit} | ${e.calories}cal ${e.protein}g prot ${e.carbs}g carb ${e.fat}g fat`
+      ).join('\n');
+
+      const prompt = `User wants to edit a logged meal. Their message: "${message}"
+
+Today's logged entries:
+${entriesList}
+
+Identify the correct entry by name match. Calculate the new nutrition values by scaling proportionally from the existing per-serving values. Return the entry ID and all updated nutrition fields.`;
+
+      const update = await callKimiStructured(c.env, prompt, updateSchema);
+      const entry = recentEntries.find(e => e.id === update.entryId);
+
+      if (!entry) {
+        return c.json({ response: "I couldn't match that to an entry in today's log. Could you be more specific about which food to update?" });
+      }
+
+      await db.prepare(
+        `UPDATE food_entries SET servings=?, serving_size=?, serving_unit=?, calories=?, protein=?, carbs=?, fat=?, fiber=?, sugar=?
+         WHERE id=? AND user_id=?`
+      ).bind(
+        update.newServings,
+        update.newServingSize || entry.serving_size,
+        update.newServingUnit || entry.serving_unit,
+        update.newCalories, update.newProtein, update.newCarbs,
+        update.newFat, update.newFiber, update.newSugar,
+        update.entryId, userId
+      ).run();
+
+      return c.json({
+        response: `Updated! **${entry.name}** changed to ${update.newServings} serving(s) — ${update.newCalories} kcal, ${update.newProtein}g protein, ${update.newCarbs}g carbs, ${update.newFat}g fat. ✅`,
+        action: 'meal_logged'
+      });
     }
 
     // --- GROCERY LIST ---
