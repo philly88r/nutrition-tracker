@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNutritionContext } from '../hooks/useNutritionContext';
-import { profileAPI } from '../services/apiService';
+import { profileAPI, goalsAPI } from '../services/apiService';
 
 /**
  * Macro Calculator Component
@@ -362,6 +362,15 @@ const MacroCalculator = ({ onClose }) => {
       
       // Cache form data to localStorage so it survives future sessions
       localStorage.setItem('macroCalculatorForm', JSON.stringify(formData));
+
+      // Save new goals directly to backend (bypasses stale closure in context)
+      await goalsAPI.update({
+        calories: results.targetCalories,
+        protein: results.macros.protein,
+        carbs: results.macros.carbs,
+        fat: results.macros.fat,
+        fiber: results.macros.fiber
+      });
 
       // Save profile to backend database
       await profileAPI.update({

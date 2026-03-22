@@ -1,7 +1,8 @@
-import { createContext, useReducer, useEffect, useRef } from 'react';
+import { createContext, useReducer, useEffect, useRef, useContext, useCallback } from 'react';
 import nutritionReducer from './nutritionReducer';
 import { loadUserData, saveUserData } from '../services/storageService';
 import { foodEntriesAPI, groceryAPI } from '../services/apiService';
+import AuthContext from './AuthContext';
 
 // Initial state
 const initialState = {
@@ -40,6 +41,9 @@ const NutritionContext = createContext(initialState);
 // Provider component
 export const NutritionProvider = ({ children }) => {
   const [state, dispatch] = useReducer(nutritionReducer, initialState);
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; }, [state]);
+  const { isAuthenticated } = useContext(AuthContext);
   
   // Calculate daily totals whenever food entries or current date changes
   useEffect(() => {
@@ -135,8 +139,8 @@ export const NutritionProvider = ({ children }) => {
   async function saveData() {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      console.log('Saving data to localforage:', state);
-      await saveUserData(state);
+      // Use stateRef.current so we always save the latest state, not a stale closure
+      await saveUserData(stateRef.current);
       // Also save current food entries to localStorage as a backup
       try {
         localStorage.setItem('foodLog_backup', JSON.stringify(state.foodEntries));
@@ -206,19 +210,12 @@ export const NutritionProvider = ({ children }) => {
     return action;
   }
 
-  // Initial data load on mount
+  // Reload data whenever auth state changes (login/logout)
   useEffect(() => {
-    console.log('NutritionContext: Loading data on mount...');
-    loadData().then(data => {
-      console.log('NutritionContext: Data loaded successfully:', {
-        foodEntriesCount: data?.foodEntries?.length || 0,
-        hasGoals: !!data?.dailyGoals,
-        currentDate: data?.currentDate
-      });
-    }).catch(err => {
+    loadData().catch(err => {
       console.error('NutritionContext: Failed to load data:', err);
     });
-  }, []);
+  }, [isAuthenticated]);
   
   return (
     <NutritionContext.Provider value={{ 
