@@ -889,8 +889,15 @@ const MacroCalculator = ({ onClose }) => {
             {/* Info Note */}
             <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-xs text-blue-800">
-                <strong>💡 Note:</strong> These calculations use the Mifflin-St Jeor equation, one of the most accurate formulas for estimating calorie needs. 
+                <strong>💡 Note:</strong> These calculations use the Mifflin-St Jeor equation, one of the most accurate formulas for estimating calorie needs.
                 Adjust based on your results and how you feel. Everyone's metabolism is unique!
+              </p>
+            </div>
+
+            {/* Medical Disclaimer */}
+            <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-xs text-amber-800">
+                <strong>⚠️ Medical Disclaimer:</strong> The macro and calorie targets provided here are general estimates for informational purposes only and do <strong>not</strong> constitute medical advice, diagnosis, or treatment. Before making any significant changes to your diet — especially if you have a medical condition, are pregnant, or are taking medication — please consult a licensed physician, registered dietitian, or qualified healthcare provider.
               </p>
             </div>
           </div>
