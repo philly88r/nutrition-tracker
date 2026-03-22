@@ -99,7 +99,7 @@ export const coachHandler = async (c) => {
     const db = c.env.DB;
 
     const isGroceryBuild = /build.*(grocery|shopping|groceries|list)|grocery.*(list|week)|shopping.*(list|week)/i.test(message);
-    const isUpdateMeal = /\b(change|update|edit|modify|correct|fix|adjust)\b.{0,60}(slice|piece|serving|cup|gram|oz|portion|amount|calorie|entry|log)|from \d+\s*(slice|piece|serving|cup|gram|oz)?\s*to \d+|i (actually|just)? ?(had|ate) \d+\b/i.test(message);
+    const isUpdateMeal = /\b(change|update|edit|modify|correct|fix|adjust|move)\b.{0,80}(slice|piece|serving|cup|gram|oz|portion|amount|calorie|entry|log|date|\d+(st|nd|rd|th))|from \d+\s*(slice|piece|serving|cup|gram|oz|st|nd|rd|th)?\s*to \d+|i (actually|just)? ?(had|ate) \d+\b|\bmove (it|that|my|the)\b/i.test(message);
     const isRecipeRequest = !isUpdateMeal && /find.*(recipe|meal|dish)|search.*(recipe|meal)|recipe.*(for|with|that)|make.*(recipe|meal)|save.*(recipe|this)/i.test(message);
     const isLogMeal = !isUpdateMeal && /^(log|i (just |had |ate |consumed |just ate |just had )|just ate|just had|log (my|a|this)|add (this|to my log|to my diary))/i.test(message);
     const isLogImage = !!imageFile && /log|add to (my )?(log|diary)|ate|had|consumed/i.test(message);
@@ -118,23 +118,25 @@ export const coachHandler = async (c) => {
       imageUrl = `data:${imageFile.type};base64,${btoa(binary)}`;
     }
 
-    // --- UPDATE / EDIT A LOGGED MEAL ---
+    // --- UPDATE / EDIT / MOVE A LOGGED MEAL ---
     if (isUpdateMeal) {
-      const today = new Date().toISOString().slice(0, 10);
+      // Search last 7 days so moves across dates work
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
       const { results: recentEntries } = await db.prepare(
-        `SELECT id, name, meal_type, servings, serving_size, serving_unit, calories, protein, carbs, fat, fiber, sugar
-         FROM food_entries WHERE user_id = ? AND date = ? ORDER BY created_at DESC LIMIT 15`
-      ).bind(userId, today).all();
+        `SELECT id, name, date, meal_type, servings, serving_size, serving_unit, calories, protein, carbs, fat, fiber, sugar
+         FROM food_entries WHERE user_id = ? AND date >= ? ORDER BY date DESC, created_at DESC LIMIT 30`
+      ).bind(userId, sevenDaysAgo).all();
 
       if (!recentEntries || recentEntries.length === 0) {
-        return c.json({ response: "I don't see any food entries logged today to update. Try logging your meal first!" });
+        return c.json({ response: "I don't see any recent food entries to update. Try logging your meal first!" });
       }
 
       const updateSchema = {
         type: 'object',
         properties: {
           entryId:        { type: 'string', description: 'ID of the entry to update' },
-          newServings:    { type: 'number', description: 'New serving count' },
+          newDate:        { type: 'string', description: 'New date YYYY-MM-DD — same as current date if not moving' },
+          newServings:    { type: 'number', description: 'New serving count — same as current if not changing' },
           newCalories:    { type: 'number' },
           newProtein:     { type: 'number' },
           newCarbs:       { type: 'number' },
@@ -144,31 +146,40 @@ export const coachHandler = async (c) => {
           newServingSize: { type: 'number' },
           newServingUnit: { type: 'string' }
         },
-        required: ['entryId', 'newServings', 'newCalories', 'newProtein', 'newCarbs', 'newFat', 'newFiber', 'newSugar', 'newServingSize', 'newServingUnit']
+        required: ['entryId', 'newDate', 'newServings', 'newCalories', 'newProtein', 'newCarbs', 'newFat', 'newFiber', 'newSugar', 'newServingSize', 'newServingUnit']
       };
 
       const entriesList = recentEntries.map(e =>
-        `ID:${e.id} | ${e.name} | ${e.servings} x ${e.serving_size}${e.serving_unit} | ${e.calories}cal ${e.protein}g prot ${e.carbs}g carb ${e.fat}g fat`
+        `ID:${e.id} | Date:${e.date} | ${e.name} | ${e.servings}x${e.serving_size}${e.serving_unit} | ${e.calories}cal ${e.protein}g prot ${e.carbs}g carb ${e.fat}g fat`
       ).join('\n');
 
-      const prompt = `User wants to edit a logged meal. Their message: "${message}"
+      // Determine current year/month for resolving day-of-month references like "the 21st"
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
 
-Today's logged entries:
+      const prompt = `User wants to edit or move a logged meal entry. Their message: "${message}"
+
+Recent logged entries (last 7 days):
 ${entriesList}
 
-Identify the correct entry by name match. Calculate the new nutrition values by scaling proportionally from the existing per-serving values. Return the entry ID and all updated nutrition fields.`;
+Current year/month: ${currentYear}-${currentMonth}
+When the user says "the 21st" or "the 22nd" they mean day ${currentYear}-${currentMonth}-21 or ${currentYear}-${currentMonth}-22.
+
+Identify the correct entry by name match. If moving to a different date, set newDate to the target YYYY-MM-DD. If only changing servings, scale nutrition proportionally. If not changing nutrition, keep the existing values. Return all fields.`;
 
       const update = await callKimiStructured(c.env, prompt, updateSchema);
       const entry = recentEntries.find(e => e.id === update.entryId);
 
       if (!entry) {
-        return c.json({ response: "I couldn't match that to an entry in today's log. Could you be more specific about which food to update?" });
+        return c.json({ response: "I couldn't find that entry in your recent log. Could you be more specific about which food to update?" });
       }
 
       await db.prepare(
-        `UPDATE food_entries SET servings=?, serving_size=?, serving_unit=?, calories=?, protein=?, carbs=?, fat=?, fiber=?, sugar=?
+        `UPDATE food_entries SET date=?, servings=?, serving_size=?, serving_unit=?, calories=?, protein=?, carbs=?, fat=?, fiber=?, sugar=?
          WHERE id=? AND user_id=?`
       ).bind(
+        update.newDate || entry.date,
         update.newServings,
         update.newServingSize || entry.serving_size,
         update.newServingUnit || entry.serving_unit,
@@ -177,10 +188,12 @@ Identify the correct entry by name match. Calculate the new nutrition values by 
         update.entryId, userId
       ).run();
 
-      return c.json({
-        response: `Updated! **${entry.name}** changed to ${update.newServings} serving(s) — ${update.newCalories} kcal, ${update.newProtein}g protein, ${update.newCarbs}g carbs, ${update.newFat}g fat. ✅`,
-        action: 'meal_logged'
-      });
+      const dateChanged = update.newDate && update.newDate !== entry.date;
+      const response = dateChanged
+        ? `Done! **${entry.name}** moved from ${entry.date} to ${update.newDate}. ✅ Refresh the screen to see the changes.`
+        : `Updated! **${entry.name}** changed to ${update.newServings} serving(s) — ${update.newCalories} kcal, ${update.newProtein}g protein, ${update.newCarbs}g carbs, ${update.newFat}g fat. ✅ Refresh the screen to see the changes.`;
+
+      return c.json({ response, action: 'meal_logged' });
     }
 
     // --- GROCERY LIST ---
