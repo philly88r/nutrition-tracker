@@ -3,15 +3,16 @@ import { Link } from 'react-router-dom';
 import Calendar from '../components/Calendar';
 import DailyFoodLog from '../components/DailyFoodLog';
 import { useNutritionContext } from '../hooks/useNutritionContext';
+import { getCentralDate } from '../utils/dateUtils';
 
 const Dashboard = () => {
   const { state, dispatch } = useNutritionContext();
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getCentralDate());
   const [selectedDateEntries, setSelectedDateEntries] = useState([]);
 
   // Force selectedDate to current date on mount
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getCentralDate();
     console.log('Dashboard: Setting initial date to', today);
     setSelectedDate(today);
     dispatch({ type: 'SET_CURRENT_DATE', payload: today });

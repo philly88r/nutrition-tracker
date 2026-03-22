@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import UsdaFoodSearch from '../components/UsdaFoodSearch';
 import ManualFoodEntry from '../components/ManualFoodEntry';
 import { useNutritionContext } from '../hooks/useNutritionContext';
+import { getCentralDate } from '../utils/dateUtils';
 
 /**
  * Page for adding foods to the daily log
@@ -16,7 +17,7 @@ const AddFoodPage = () => {
   const processAndAddFood = (foodData) => {
     const foodEntry = {
       id: `entry_${Date.now()}`,
-      date: new Date().toISOString().split('T')[0], // Always use today's date
+      date: getCentralDate(), // Always use today's date in Central Time
       name: foodData.name || foodData.description,
       brand: foodData.brand || '',
       calories: foodData.calories || 0,

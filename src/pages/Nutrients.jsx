@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { micronutrients } from '../data/nutrientData';
+import { getCentralDate } from '../utils/dateUtils';
 
 const Nutrients = () => {
   const [dailyNutrients, setDailyNutrients] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getCentralDate());
 
   useEffect(() => {
     // Load food log and calculate nutrient totals

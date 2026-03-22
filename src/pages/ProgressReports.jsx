@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNutritionContext } from '../hooks/useNutritionContext';
 import MacroTracker from '../components/MacroTracker';
+import { getCentralDate } from '../utils/dateUtils';
 
 /**
  * Progress Reports Page
@@ -9,7 +10,7 @@ import MacroTracker from '../components/MacroTracker';
 const ProgressReports = () => {
   const { state } = useNutritionContext();
   const [timeframe, setTimeframe] = useState('week'); // 'day', 'week', 'month'
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getCentralDate());
 
   // Calculate date ranges
   const getDateRange = () => {
@@ -222,7 +223,7 @@ const ProgressReports = () => {
             </button>
             
             <button
-              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+              onClick={() => setSelectedDate(getCentralDate())}
               className="px-3 py-2 text-xs sm:text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             >
               Today

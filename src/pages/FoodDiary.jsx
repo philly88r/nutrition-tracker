@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import MacroTracker from '../components/MacroTracker';
 import { useNutritionContext } from '../hooks/useNutritionContext';
+import { getCentralDate } from '../utils/dateUtils';
 
 const FoodDiary = () => {
   const { state } = useNutritionContext();
   const [foodLog, setFoodLog] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getCentralDate());
   const [dailyTotals, setDailyTotals] = useState({
     calories: 0,
     protein: 0,

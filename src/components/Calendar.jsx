@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, parseISO } from 'date-fns';
+import { getCentralDate, getCentralDateObject } from '../utils/dateUtils';
 
 const Calendar = ({ foodLog, onSelectDate, selectedDate }) => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(getCentralDateObject());
+  const todayCT = getCentralDate();
   
   // Generate days for the current month view
   const monthStart = startOfMonth(currentMonth);
@@ -64,7 +66,7 @@ const Calendar = ({ foodLog, onSelectDate, selectedDate }) => {
                 ${isSameMonth(day, currentMonth) ? 'text-gray-900' : 'text-gray-400'}
                 ${isSelected ? 'bg-blue-100 border border-blue-500' : 
                   hasEntries ? 'bg-green-50' : 'hover:bg-gray-100'}
-                ${isSameDay(day, new Date()) && !isSelected ? 'border border-gray-300' : ''}
+                ${dateStr === todayCT && !isSelected ? 'border border-gray-300' : ''}
               `}
             >
               <span>{format(day, 'd')}</span>
